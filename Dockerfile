@@ -23,15 +23,12 @@ RUN apk add --no-cache ffmpeg alsa-utils pulseaudio bash
 # Copie le binaire librespot depuis l'étape de build
 COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
 
-# Copie les fichiers du projet
+# Copie TOUS les fichiers du projet (y compris lib/)
 WORKDIR /app
-COPY package*.json ./
-COPY index.js ./
-COPY deploy-commands.js ./
-COPY commands ./commands
+COPY . .
 
-# Installe les dépendances Node.js (incluant @discordjs/voice)
-RUN npm install @discordjs/voice prism-media
+# Installe les dépendances Node.js
+RUN npm install
 
 # Lance le bot
 CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
