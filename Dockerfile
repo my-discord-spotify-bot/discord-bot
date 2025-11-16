@@ -1,32 +1,37 @@
-# Étape 1 : Construction de librespot avec Rust 1.85
+# Étape 1 : Compilation de librespot avec Rust 1.88
 FROM rust:1.88 as builder
 
-# Installe les dépendances pour compiler librespot
+# Installe les dépendances pour librespot et ffmpeg
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     pkg-config \
     libssl-dev \
     libasound2-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Installe librespot 0.8.0
-RUN cargo install librespot --version 0.8.0
+RUN cargo install librespot --version 0.8.0 --features "pulseaudio-backend,rodio-backend"
 
-# Étape 2 : Image finale avec Node.js
+# Étape 2 : Image finale avec Node.js 18
 FROM node:18-alpine
 
-# Installe ffmpeg et les dépendances audio
-RUN apk add --no-cache ffmpeg alsa-utils
+# Installe les dépendances système (ffmpeg, alsa, pulseaudio)
+RUN apk add --no-cache ffmpeg alsa-utils pulseaudio bash
 
 # Copie le binaire librespot depuis l'étape de build
 COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
 
-# Configure ton application
+# Copie les fichiers du projet
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
-COPY . .
+COPY index.js ./
+COPY deploy-commands.js ./
+COPY commands ./commands
 
-# Commande pour lancer ton application (à adapter)
-CMD ["npm", "start"]
+# Installe les dépendances Node.js (incluant @discordjs/voice)
+RUN npm install @discordjs/voice prism-media
+
+# Lance le bot
+CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
