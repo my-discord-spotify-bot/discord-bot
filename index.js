@@ -3,6 +3,11 @@ const path = require("node:path");
 const { Client, Collection, GatewayIntentBits, Events } = require("discord.js");
 const { connectAndPlay, disconnectFromGuild } = require('./lib/voicePlayer');
 
+// Ajoute les fonctions de voicePlayer au client
+client.connectAndPlay = (guild, voiceChannel, userId) => connectAndPlay(guild, voiceChannel, userId);
+client.disconnectFromGuild = disconnectFromGuild;
+
+
 
 
 const client = new Client({
