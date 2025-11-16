@@ -17,16 +17,17 @@ RUN apt-get update && apt-get install -y \
 RUN cargo install librespot --version 0.8.0 --features "pulseaudio-backend,rodio-backend"
 
 # Runtime stage
-FROM node:18-bullseye
+FROM debian:bookworm-slim
 
 # Installe les dépendances système nécessaires
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     alsa-utils \
     pulseaudio \
-    libssl1.1 \
+    libssl3 \
     libasound2 \
     libpulse0 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copie le binaire librespot depuis l'étape de build
@@ -36,10 +37,14 @@ COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/
 RUN chmod +x /usr/local/bin/librespot
 
 # Vérifie que librespot est bien installé
-RUN ldd /usr/local/bin/librespot && \
-    librespot --version
+RUN ldd /usr/local/bin/librespot
 
 WORKDIR /app
+
+# Installe Node.js 18
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copie les fichiers de configuration de npm et installe les dépendances
 COPY package*.json ./
