@@ -25,10 +25,9 @@ COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
 
 # Copie TOUS les fichiers du projet
 WORKDIR /app
-COPY . .
-
-# Installe les dépendances Node.js
+COPY package*.json ./
 RUN npm install
+COPY . .
 
 # Lance le bot
 CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
