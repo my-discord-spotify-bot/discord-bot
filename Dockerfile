@@ -40,7 +40,9 @@ WORKDIR /usr/src/app
 
 # Install Node.js dependencies separately to leverage Docker layer caching.
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+COPY package-lock.json ./
+RUN npm ci --omit=dev
+
 
 # Copy the rest of the bot source code.
 COPY . .
