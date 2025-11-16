@@ -1,5 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { MessageFlags } = require('discord.js');
 const axios = require('axios');
+const database = require('../database'); // Corrige le chemin
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -9,13 +11,12 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      const database = require('../../database');
       const account = await database.get_account(interaction.user.id);
 
       if (!account || !account.access_token) {
         return interaction.editReply({
           content: "❌ Aucun compte Spotify lié. Utilise `/linkspotify` pour lier ton compte.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -28,7 +29,7 @@ module.exports = {
       if (!response.data.devices || response.data.devices.length === 0) {
         return interaction.editReply({
           content: "❌ Aucun appareil Spotify trouvé. Assure-toi que Muzika Bot est démarré et connecté.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -38,13 +39,13 @@ module.exports = {
 
       await interaction.editReply({
         content: `🎧 **Appareils Spotify disponibles :**\n${devices}`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     } catch (error) {
       console.error("Erreur dans /spotify_devices:", error.response?.data || error.message);
       await interaction.editReply({
         content: "❌ Impossible de récupérer la liste des appareils Spotify.",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },
