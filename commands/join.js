@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const db = require('../database');
-
+const axios = require("axios");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('join')
@@ -23,14 +22,15 @@ module.exports = {
       await interaction.deferReply({ ephemeral: true });
       
       // Get OAuth token from database
-      const account = await db.get_account(user.id);
-      if (!account || !account.accessToken) {
+const backendBaseUrl = process.env.BACKEND_BASE_URL;
+              const response = await axios.get(`${backendBaseUrl}/get-token?code=${encodeURIComponent(user.id)}`);
+              const accessToken = response.data?.access_token;if (accessToken) {
         return interaction.editReply({
           content: "❌ Tu dois d'abord lier ton compte Spotify avec /linkspotify",
           ephemeral: true,
         });
       }
-      await interaction.client.connectAndPlay(guild, member.voice.channel, user.id, account.accessToken);
+      await interaction.client.connectAndPlay(guild, member.voice.channel, user.id, accessToken);
       await interaction.editReply({
         content: "✅ **Muzika Bot** est prêt ! Sélectionne-le comme device dans Spotify (ton compte).",
       });
