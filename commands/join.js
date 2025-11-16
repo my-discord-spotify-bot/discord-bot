@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const db = require('../database');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -20,7 +21,16 @@ module.exports = {
 
     try {
       await interaction.deferReply({ ephemeral: true });
-      await interaction.client.connectAndPlay(guild, member.voice.channel, user.id);
+      
+      // Get OAuth token from database
+      const account = await db.get_account(user.id);
+      if (!account || !account.accessToken) {
+        return interaction.reply({
+          content: "❌ Tu dois d'abord lier ton compte Spotify avec /linkspotify",
+          ephemeral: true,
+        });
+      }
+      await interaction.client.connectAndPlay(guild, member.voice.channel, user.id, account.accessToken);
       await interaction.editReply({
         content: "✅ **Muzika Bot** est prêt ! Sélectionne-le comme device dans Spotify (ton compte).",
       });
