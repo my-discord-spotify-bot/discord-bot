@@ -15,7 +15,7 @@ try {
 
 // Initialisation du client Discord
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 });
 client.commands = new Collection();
 

@@ -11,6 +11,13 @@ module.exports = {
       return interaction.reply({ content: "❌ Tu dois être dans un salon vocal !", ephemeral: true });
     }
 
+    if (guild.members.me?.voice?.channelId && guild.members.me.voice.channelId !== member.voice.channelId) {
+      return interaction.reply({
+        content: "❌ Je suis déjà connecté dans un autre salon vocal.",
+        ephemeral: true,
+      });
+    }
+
     try {
       await interaction.deferReply({ ephemeral: true });
       await interaction.client.connectAndPlay(guild, member.voice.channel, user.id);

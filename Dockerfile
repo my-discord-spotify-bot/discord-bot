@@ -1,57 +1,58 @@
-# Builder stage
-FROM rust:1.88 AS builder
+# ---- Stage 1: build librespot -------------------------------------------------
+# We compile librespot once to keep the final runtime image light.
+FROM rust:1.78-bookworm AS librespot-builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Installe les dépendances nécessaires pour la compilation
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
+# Install only what is needed to compile librespot.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     libssl-dev \
     libasound2-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# Build librespot with the audio backends required by Discord voice.
+RUN cargo install librespot --locked --features "pulseaudio-backend,rodio-backend,alsa-backend"
+
+# ---- Stage 2: runtime ---------------------------------------------------------
+# Based on the official Node.js 18 image so Node is installed cleanly.
+FROM node:18-bookworm-slim AS runtime
+
+# System dependencies needed for ffmpeg + PulseAudio/ALSA in Discord voice.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Installe librespot
-RUN cargo install librespot --version 0.8.0 --features "pulseaudio-backend,rodio-backend"
-
-# Runtime stage
-FROM debian:bookworm-slim
-
-# Installe les dépendances système nécessaires
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    alsa-utils \
-    pulseaudio \
-    libssl3 \
     libasound2 \
     libpulse0 \
+    pulseaudio \
+    alsa-utils \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
-# Copie le binaire librespot depuis l'étape de build
-COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/
-
-# Rend le binaire exécutable
+# Copy the librespot binary built in the previous stage.
+COPY --from=librespot-builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
 RUN chmod +x /usr/local/bin/librespot
 
-# Vérifie que librespot est bien installé
-RUN ldd /usr/local/bin/librespot
+WORKDIR /usr/src/app
 
-WORKDIR /app
-
-# Installe Node.js 18
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copie les fichiers de configuration de npm et installe les dépendances
+# Install Node.js dependencies separately to leverage Docker layer caching.
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
-# Copie le reste des fichiers du projet
+# Copy the rest of the bot source code.
 COPY . .
 
-# Lance le bot
-CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
+# Install the entrypoint script that will launch librespot + the bot together.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Ensure files are owned by the non-root "node" user already provided by the base image.
+RUN chown -R node:node /usr/src/app
+USER node
+
+# Default configuration for librespot; can be overridden at runtime.
+ENV SPOTIFY_DEVICE_NAME="Muzika Bot" \
+    SPOTIFY_BITRATE="160" \
+    LIBRESPOT_ARGS=""
+
+# Launch librespot in the background, then the Discord bot.
+CMD ["/usr/local/bin/docker-entrypoint.sh"]
