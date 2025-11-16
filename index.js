@@ -1,23 +1,13 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { Client, Collection, GatewayIntentBits, Events } = require("discord.js");
-const { connectAndPlay, disconnectFromGuild } = require('./lib/voicePlayer');
+const { connectAndPlay, disconnectFromGuild } = require('./voicePlayer');
 
-// Ajoute les fonctions de voicePlayer au client
-client.connectAndPlay = (guild, voiceChannel, userId) => connectAndPlay(guild, voiceChannel, userId);
-client.disconnectFromGuild = disconnectFromGuild;
-
-
-
-
+// Initialise le client Discord
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 client.commands = new Collection();
-
-// Ajoute les fonctions de voicePlayer au client
-client.connectAndPlay = connectAndPlay;
-client.disconnectFromGuild = disconnectFromGuild;
 
 // Chargement dynamique des commandes
 const commandsPath = path.join(__dirname, "commands");
@@ -29,9 +19,13 @@ for (const file of commandFiles) {
   if ("data" in command && "execute" in command) {
     client.commands.set(command.data.name, command);
   } else {
-    console.warn(`[index] La commande ${filePath} n'a pas de propriété "data" ou "execute".`);
+    console.warn(`[index] La commande ${filePath} manque "data" ou "execute".`);
   }
 }
+
+// Ajoute les fonctions de voicePlayer au client APRES l'initialisation
+client.connectAndPlay = connectAndPlay;
+client.disconnectFromGuild = disconnectFromGuild;
 
 // Événement : Bot prêt
 client.once(Events.ClientReady, (c) => {
