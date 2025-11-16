@@ -21,24 +21,23 @@ function startLibrespotProcess() {
   }
 
   const args = [
-    "--name",
-    deviceName,
-    "--backend",
-    "pipe",
-    "--device",
-    "-",
-    "--bitrate",
-    "160",
+    "--name", deviceName,
+    "--backend", "pipe",
+    "--device", "-",
+    "--bitrate", "160",
     "--disable-audio-cache",
-    "--username",
-    username,
-    "--password",
-    password,
+    "--username", username,
+    "--password", password,
   ];
 
   console.log("[voicePlayer] Lancement de librespot :", args.join(" "));
+
   const librespot = spawn("librespot", args, {
     stdio: ["ignore", "pipe", "inherit"],
+  });
+
+  librespot.on("error", (err) => {
+    console.error("[voicePlayer] Erreur librespot:", err);
   });
 
   librespot.on("exit", (code, signal) => {
@@ -50,27 +49,23 @@ function startLibrespotProcess() {
 
 function startFfmpegPcmToOpus() {
   const ffmpegArgs = [
-    "-loglevel",
-    "error",
-    "-f",
-    "s16le",
-    "-ar",
-    "44100",
-    "-ac",
-    "2",
-    "-i",
-    "pipe:0",
-    "-f",
-    "opus",
-    "-ar",
-    "48000",
-    "-ac",
-    "2",
+    "-loglevel", "error",
+    "-f", "s16le",
+    "-ar", "44100",
+    "-ac", "2",
+    "-i", "pipe:0",
+    "-f", "opus",
+    "-ar", "48000",
+    "-ac", "2",
     "pipe:1",
   ];
 
   const ffmpeg = spawn("ffmpeg", ffmpegArgs, {
     stdio: ["pipe", "pipe", "inherit"],
+  });
+
+  ffmpeg.on("error", (err) => {
+    console.error("[voicePlayer] Erreur ffmpeg:", err);
   });
 
   ffmpeg.on("exit", (code, signal) => {
@@ -82,7 +77,6 @@ function startFfmpegPcmToOpus() {
 
 async function connectAndPlay(guild, voiceChannel) {
   const guildId = guild.id;
-
   const existing = sessions.get(guildId);
   if (existing) return existing;
 
@@ -120,7 +114,6 @@ async function connectAndPlay(guild, voiceChannel) {
   });
 
   sessions.set(guildId, { connection, player, librespot, ffmpeg });
-
   return { connection, player, librespot, ffmpeg };
 }
 
