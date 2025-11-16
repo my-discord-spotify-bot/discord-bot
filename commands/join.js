@@ -9,11 +9,11 @@ module.exports = {
     const { member, guild, user } = interaction;
 
     if (!member.voice.channel) {
-      return interaction.editReply({ content: "❌ Tu dois être dans un salon vocal !", ephemeral: true });
+      return interaction.reply({ content:: "❌ Tu dois être dans un salon vocal !", ephemeral: true });
     }
 
     if (guild.members.me?.voice?.channelId && guild.members.me.voice.channelId !== member.voice.channelId) {
-      return interaction.editReply({
+      return interaction.reply({
         content: "❌ Je suis déjà connecté dans un autre salon vocal.",
         ephemeral: true,
       });
