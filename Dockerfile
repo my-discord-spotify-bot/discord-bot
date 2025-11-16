@@ -14,16 +14,15 @@ RUN apt-get update && apt-get install -y \
 # Installe librespot 0.8.0
 RUN cargo install librespot --version 0.8.0 --features "pulseaudio-backend,rodio-backend"
 
-# Étape 2 : Image finale avec Node.js 18
-FROM node:18-alpine
+# Étape 2 : Image finale avec Node.js 18 sur Debian
+FROM node:18-buster
 
 # Installe les dépendances système nécessaires
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     ffmpeg \
     alsa-utils \
     pulseaudio \
-    bash \
-    libstdc++
+    && rm -rf /var/lib/apt/lists/*
 
 # Copie le binaire librespot depuis l'étape de build
 COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/
