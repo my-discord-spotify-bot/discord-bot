@@ -9,7 +9,7 @@ module.exports = {
     const { member, guild, user } = interaction;
 
     if (!member.voice.channel) {
-      return interaction.reply({ content::"❌ Tu dois être dans un salon vocal !", ephemeral: true });
+      return interaction.reply({ content:"❌ Tu dois être dans un salon vocal !", ephemeral: true });
     }
 
     if (guild.members.me?.voice?.channelId && guild.members.me.voice.channelId !== member.voice.channelId) {
