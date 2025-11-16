@@ -7,7 +7,7 @@ let connectAndPlay, disconnectFromGuild;
 try {
   const voicePlayerPath = require.resolve('./lib/voicePlayer');
   console.log(`[index] Module voicePlayer trouvé : ${voicePlayerPath}`);
-  ({ connectAndPlay, disconnectFromGuild } = require('./lib/voicePlayer'));
+    ({ joinAndPlay: connectAndPlay, disconnectFromGuild } = require('./lib/voicePlayer'));
 } catch (err) {
   console.error("[index] Erreur lors du chargement de voicePlayer :", err);
   process.exit(1);
