@@ -9,11 +9,11 @@ module.exports = {
     const { member, guild, user } = interaction;
 
     if (!member.voice.channel) {
-      return interaction.reply({ content: "❌ Tu dois être dans un salon vocal !", ephemeral: true });
+      return interaction.editReply({ content: "❌ Tu dois être dans un salon vocal !", ephemeral: true });
     }
 
     if (guild.members.me?.voice?.channelId && guild.members.me.voice.channelId !== member.voice.channelId) {
-      return interaction.reply({
+      return interaction.editReply({
         content: "❌ Je suis déjà connecté dans un autre salon vocal.",
         ephemeral: true,
       });
@@ -25,7 +25,7 @@ module.exports = {
       // Get OAuth token from database
       const account = await db.get_account(user.id);
       if (!account || !account.accessToken) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "❌ Tu dois d'abord lier ton compte Spotify avec /linkspotify",
           ephemeral: true,
         });
