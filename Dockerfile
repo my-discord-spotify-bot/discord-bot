@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     libasound2-dev \
     libpulse-dev \
-    libpulse-simple-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Build librespot with the audio backends required by Discord voice.
@@ -57,4 +56,4 @@ ENV SPOTIFY_DEVICE_NAME="Muzika Bot" \
     LIBRESPOT_ARGS=""
 
 # Launch librespot in the background, then the Discord bot.
-CMD ["/usr/local/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
