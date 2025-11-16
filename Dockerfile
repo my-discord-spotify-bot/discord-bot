@@ -26,10 +26,13 @@ RUN apk add --no-cache \
     libstdc++
 
 # Copie le binaire librespot depuis l'étape de build
-COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
+COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/
+
+# Rend le binaire exécutable
+RUN chmod +x /usr/local/bin/librespot
 
 # Vérifie que librespot est bien installé
-RUN which librespot || (echo "Erreur : librespot non trouvé" && exit 1)
+RUN which librespot && librespot --version
 
 # Crée et utilise le répertoire de travail
 WORKDIR /app
@@ -40,9 +43,6 @@ RUN npm install
 
 # Copie le reste des fichiers du projet
 COPY . .
-
-# Affiche la version de librespot pour vérifier l'installation
-RUN librespot --version
 
 # Lance le bot
 CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
