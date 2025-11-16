@@ -23,7 +23,9 @@ FROM node:18-bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libasound2 \
+    libasound2-dev \
     libpulse0 \
+    libpulse-dev \
     pulseaudio \
     alsa-utils \
     ca-certificates \
@@ -31,6 +33,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     g++ \
     && rm -rf /var/lib/apt/lists/*
+
+# Route ALSA vers PulseAudio afin d'éviter les erreurs de périphériques inexistants
+RUN printf 'pcm.!default {\n  type pulse\n}\nctl.!default {\n  type pulse\n}\n' > /etc/asound.conf
 
 # Copy the librespot binary built in the previous stage.
 COPY --from=librespot-builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
@@ -40,8 +45,9 @@ WORKDIR /usr/src/app
 
 # Install Node.js dependencies separately to leverage Docker layer caching.
 COPY package*.json ./
-COPY package*.json ./
-RUN npm install --legacy-peer-deps --omit=dev
+RUN npm install --legacy-peer-deps --omit=dev \
+    && apt-get purge -y --auto-remove python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 
 
@@ -59,7 +65,8 @@ USER node
 # Default configuration for librespot; can be overridden at runtime.
 ENV SPOTIFY_DEVICE_NAME="Muzika Bot" \
     SPOTIFY_BITRATE="160" \
-    LIBRESPOT_ARGS=""
+    SPOTIFY_BOT_EMAIL="" \
+    SPOTIFY_BOT_PASSWORD=""
 
-# Launch librespot in the background, then the Discord bot.
+# Launch the Discord bot (PulseAudio is started by the entrypoint).
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
