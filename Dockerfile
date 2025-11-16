@@ -1,6 +1,6 @@
 # ---- Stage 1: build librespot -------------------------------------------------
 # We compile librespot once to keep the final runtime image light.
-FROM rust:1.78-bookworm AS librespot-builder
+FROM rust:1.86-bookworm AS librespot-builder
 
 WORKDIR /build
 
