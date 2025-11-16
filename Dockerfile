@@ -1,33 +1,32 @@
-# ---------- STAGE 1 : build de librespot ----------
-FROM rust:1.82-slim AS librespot-builder
+# Étape 1 : Construction de librespot avec Rust 1.85
+FROM rust:1.85 as builder
 
+# Installe les dépendances pour compiler librespot
 RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libasound2-dev \
     build-essential \
- && rm -rf /var/lib/apt/lists/*
+    cmake \
+    pkg-config \
+    libssl-dev \
+    libasound2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Installe le binaire librespot dans /usr/local/cargo/bin/librespot
-RUN cargo install librespot
+# Installe librespot 0.8.0
+RUN cargo install librespot --version 0.8.0
 
-# ---------- STAGE 2 : image finale Node + ffmpeg + librespot ----------
-FROM node:18
+# Étape 2 : Image finale avec Node.js
+FROM node:18-alpine
 
+# Installe ffmpeg et les dépendances audio
+RUN apk add --no-cache ffmpeg alsa-utils
+
+# Copie le binaire librespot depuis l'étape de build
+COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
+
+# Configure ton application
 WORKDIR /app
-
-# Copie du package.json du bot
 COPY package*.json ./
-
-# Dépendances Node
 RUN npm install
-
-# Copie du code du bot
 COPY . .
 
-# Copie du binaire librespot construit dans le 1er stage
-COPY --from=librespot-builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
-
-# ffmpeg pour convertir le flux audio
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
-
+# Commande pour lancer ton application (à adapter)
 CMD ["npm", "start"]
