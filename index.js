@@ -55,7 +55,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     console.error(`[index] Commande introuvable : ${interaction.commandName}`);
     return interaction.reply({
       content: "❌ Cette commande n'existe pas.",
-      ephemeral: true,
+      flags: 64, // Remplace ephemeral: true
     });
   }
 
@@ -66,12 +66,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({
         content: "❌ Une erreur est survenue lors de l'exécution de la commande.",
-        ephemeral: true,
+        flags: 64, // Remplace ephemeral: true
       });
     } else {
       await interaction.reply({
         content: "❌ Une erreur est survenue lors de l'exécution de la commande.",
-        ephemeral: true,
+        flags: 64, // Remplace ephemeral: true
       });
     }
   }
