@@ -1,5 +1,5 @@
 # Étape 1 : Construction de librespot avec Rust 1.85
-FROM rust:1.85 as builder
+FROM rust:1.88 as builder
 
 # Installe les dépendances pour compiler librespot
 RUN apt-get update && apt-get install -y \
