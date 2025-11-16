@@ -5,20 +5,17 @@ module.exports = {
     .setName('join')
     .setDescription('Rejoint le salon vocal et active Muzika Bot comme device Spotify'),
   async execute(interaction) {
-    const { member, guild } = interaction;
+    const { member, guild, user } = interaction;
 
     if (!member.voice.channel) {
-      return interaction.reply({
-        content: "❌ Tu dois être dans un salon vocal !",
-        ephemeral: true,
-      });
+      return interaction.reply({ content: "❌ Tu dois être dans un salon vocal !", ephemeral: true });
     }
 
     try {
       await interaction.deferReply({ ephemeral: true });
-      await interaction.client.connectAndPlay(guild, member.voice.channel);
+      await interaction.client.connectAndPlay(guild, member.voice.channel, user.id);
       await interaction.editReply({
-        content: "✅ **Muzika Bot** est prêt ! Sélectionne-le comme device dans Spotify.",
+        content: "✅ **Muzika Bot** est prêt ! Sélectionne-le comme device dans Spotify (ton compte).",
       });
     } catch (error) {
       console.error("Erreur dans /join:", error);
