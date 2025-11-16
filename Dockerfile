@@ -23,7 +23,7 @@ RUN apk add --no-cache ffmpeg alsa-utils pulseaudio bash
 # Copie le binaire librespot depuis l'étape de build
 COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
 
-# Copie TOUS les fichiers du projet (y compris lib/)
+# Copie TOUS les fichiers du projet
 WORKDIR /app
 COPY . .
 
