@@ -19,7 +19,7 @@ RUN cargo install librespot --locked --features "pulseaudio-backend,rodio-backen
 # Based on the official Node.js 18 image so Node is installed cleanly.
 FROM node:18-bookworm-slim AS runtime
 
-# System dependencies needed for ffmpeg + PulseAudio/ALSA in Discord voice.
+# System dependencies needed for ffmpeg + PulseAudio/ALSA in Discord voice + native Node modules
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libasound2 \
@@ -27,7 +27,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pulseaudio \
     alsa-utils \
     ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy the librespot binary built in the previous stage.
 COPY --from=librespot-builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
