@@ -84,3 +84,4 @@ try {
   console.error("[index] Erreur lors de la connexion du bot :", error);
   process.exit(1);
 }
+
