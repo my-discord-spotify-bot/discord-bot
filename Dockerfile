@@ -31,4 +31,4 @@ COPY . .
 RUN npm install
 
 # Lance le bot
-CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
+CMD ["sh", -c", "node deploy-commands.js && node index.js"]
