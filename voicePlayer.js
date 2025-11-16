@@ -7,16 +7,37 @@ const {
   NoSubscriberBehavior,
   StreamType,
 } = require("@discordjs/voice");
+const axios = require("axios");
 
 const sessions = new Map(); // guildId -> { connection, player, librespot, ffmpeg }
 
-async function startLibrespotProcess(userId) {
+async function getValidAccessToken(userId) {
   const database = require('../database');
-  const account = await database.get_account(userId.toString());
+  let account = await database.get_account(userId.toString());
 
-  if (!account || !account.access_token) {
+  if (!account || !account.refresh_token) {
     throw new Error("❌ Aucun compte Spotify lié. Utilise `/linkspotify` pour lier ton compte.");
   }
+
+  // Si le token est expiré ou absent, on le rafraîchit
+  if (!account.access_token) {
+    const response = await axios.post(`${process.env.BACKEND_BASE_URL}/refresh-token`, {
+      refresh_token: account.refresh_token,
+    });
+
+    if (!response.data?.access_token) {
+      throw new Error("❌ Impossible de rafraîchir le token Spotify. Relie ton compte avec `/linkspotify`.");
+    }
+
+    account.access_token = response.data.access_token;
+    await database.update_account(userId.toString(), { access_token: account.access_token });
+  }
+
+  return account.access_token;
+}
+
+async function startLibrespotProcess(userId) {
+  const accessToken = await getValidAccessToken(userId);
 
   const args = [
     "--name", `Muzika Bot (${userId})`,
@@ -25,7 +46,7 @@ async function startLibrespotProcess(userId) {
     "--bitrate", "160",
     "--disable-audio-cache",
     "--username", userId.toString(),
-    "--password", account.access_token, // Utilise le token OAuth comme "password"
+    "--password", accessToken, // Utilise le token OAuth comme "password"
   ];
 
   console.log("[voicePlayer] Lancement de librespot avec le token utilisateur");
