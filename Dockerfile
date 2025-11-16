@@ -4,11 +4,13 @@ FROM rust:1.86-bookworm AS librespot-builder
 
 WORKDIR /build
 
-# Install only what is needed to compile librespot.
+# Install all dependencies required for compiling librespot with pulseaudio/alsa backends
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     libssl-dev \
     libasound2-dev \
+    libpulse-dev \
+    libpulse-simple-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Build librespot with the audio backends required by Discord voice.
