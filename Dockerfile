@@ -1,7 +1,7 @@
-# Étape 1 : Compilation de librespot avec Rust 1.88
+# Étape 1 : Compilation de librespot avec Rust
 FROM rust:1.88 as builder
 
-# Installe les dépendances pour librespot et ffmpeg
+# Installe les dépendances pour librespot
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -17,17 +17,32 @@ RUN cargo install librespot --version 0.8.0 --features "pulseaudio-backend,rodio
 # Étape 2 : Image finale avec Node.js 18
 FROM node:18-alpine
 
-# Installe les dépendances système (ffmpeg, alsa, pulseaudio)
-RUN apk add --no-cache ffmpeg alsa-utils pulseaudio bash
+# Installe les dépendances système nécessaires
+RUN apk add --no-cache \
+    ffmpeg \
+    alsa-utils \
+    pulseaudio \
+    bash \
+    libstdc++
 
 # Copie le binaire librespot depuis l'étape de build
 COPY --from=builder /usr/local/cargo/bin/librespot /usr/local/bin/librespot
 
-# Copie TOUS les fichiers du projet
+# Vérifie que librespot est bien installé
+RUN which librespot || (echo "Erreur : librespot non trouvé" && exit 1)
+
+# Crée et utilise le répertoire de travail
 WORKDIR /app
+
+# Copie les fichiers de configuration de npm et installe les dépendances
 COPY package*.json ./
 RUN npm install
+
+# Copie le reste des fichiers du projet
 COPY . .
+
+# Affiche la version de librespot pour vérifier l'installation
+RUN librespot --version
 
 # Lance le bot
 CMD ["sh", "-c", "node deploy-commands.js && node index.js"]
