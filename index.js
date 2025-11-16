@@ -1,9 +1,19 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { Client, Collection, GatewayIntentBits, Events } = require("discord.js");
-const { connectAndPlay, disconnectFromGuild } = require('./voicePlayer');
 
-// Initialise le client Discord
+// Vérification du module voicePlayer
+let connectAndPlay, disconnectFromGuild;
+try {
+  const voicePlayerPath = require.resolve('./lib/voicePlayer');
+  console.log(`[index] Module voicePlayer trouvé : ${voicePlayerPath}`);
+  ({ connectAndPlay, disconnectFromGuild } = require('./lib/voicePlayer'));
+} catch (err) {
+  console.error("[index] Erreur lors du chargement de voicePlayer :", err);
+  process.exit(1);
+}
+
+// Initialisation du client Discord
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
@@ -15,15 +25,19 @@ const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith("
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
-  if ("data" in command && "execute" in command) {
-    client.commands.set(command.data.name, command);
-  } else {
-    console.warn(`[index] La commande ${filePath} manque "data" ou "execute".`);
+  try {
+    const command = require(filePath);
+    if ("data" in command && "execute" in command) {
+      client.commands.set(command.data.name, command);
+    } else {
+      console.warn(`[index] La commande ${filePath} manque "data" ou "execute".`);
+    }
+  } catch (error) {
+    console.error(`[index] Erreur lors du chargement de la commande ${filePath} :`, error);
   }
 }
 
-// Ajoute les fonctions de voicePlayer au client APRES l'initialisation
+// Ajout des fonctions de voicePlayer au client
 client.connectAndPlay = connectAndPlay;
 client.disconnectFromGuild = disconnectFromGuild;
 
@@ -38,14 +52,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   const command = client.commands.get(interaction.commandName);
   if (!command) {
-    console.error(`[index] Aucune commande correspondant à ${interaction.commandName} n'a été trouvée.`);
-    return;
+    console.error(`[index] Commande introuvable : ${interaction.commandName}`);
+    return interaction.reply({
+      content: "❌ Cette commande n'existe pas.",
+      ephemeral: true,
+    });
   }
 
   try {
     await command.execute(interaction);
   } catch (error) {
-    console.error(`[index] Erreur lors de l'exécution de la commande :`, error);
+    console.error(`[index] Erreur lors de l'exécution de la commande ${interaction.commandName} :`, error);
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({
         content: "❌ Une erreur est survenue lors de l'exécution de la commande.",
@@ -60,5 +77,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-// Connexion du bot avec le token depuis les variables d'environnement
-client.login(process.env.DISCORD_TOKEN);
+// Connexion du bot
+try {
+  client.login(process.env.DISCORD_TOKEN);
+} catch (error) {
+  console.error("[index] Erreur lors de la connexion du bot :", error);
+  process.exit(1);
+}
