@@ -13,14 +13,14 @@ module.exports = {
 
   async update_account(userId, updates) {
     try {
-      await axios.post(`${process.env.BACKEND_BASE_URL}/update-account`, {
+      const response = await axios.post(`${process.env.BACKEND_BASE_URL}/update-account`, {
         userId,
         ...updates,
       });
-      return true;
+      return response.data;
     } catch (error) {
       console.error("Erreur lors de la mise à jour du compte:", error.message);
-      return false;
+      return null;
     }
   },
 };
