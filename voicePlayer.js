@@ -10,34 +10,28 @@ const {
 
 const sessions = new Map(); // guildId -> { connection, player, librespot, ffmpeg }
 
-function startLibrespotProcess() {
-  const username = process.env.BOT_SPOTIFY_USERNAME;
-  const password = process.env.BOT_SPOTIFY_PASSWORD;
-  const deviceName = process.env.BOT_SPOTIFY_DEVICE_NAME || "Muzika Bot";
+async function startLibrespotProcess(userId) {
+  const database = require('../database');
+  const account = await database.get_account(userId.toString());
 
-  if (!username || !password) {
-    console.error("[voicePlayer] BOT_SPOTIFY_USERNAME / BOT_SPOTIFY_PASSWORD manquants");
-    throw new Error("Missing Spotify bot credentials");
+  if (!account || !account.access_token) {
+    throw new Error("❌ Aucun compte Spotify lié. Utilise `/linkspotify` pour lier ton compte.");
   }
 
   const args = [
-    "--name", deviceName,
+    "--name", `Muzika Bot (${userId})`,
     "--backend", "pipe",
     "--device", "-",
     "--bitrate", "160",
     "--disable-audio-cache",
-    "--username", username,
-    "--password", password,
+    "--username", userId.toString(),
+    "--password", account.access_token, // Utilise le token OAuth comme "password"
   ];
 
-  console.log("[voicePlayer] Lancement de librespot :", args.join(" "));
+  console.log("[voicePlayer] Lancement de librespot avec le token utilisateur");
 
   const librespot = spawn("librespot", args, {
     stdio: ["ignore", "pipe", "inherit"],
-  });
-
-  librespot.on("error", (err) => {
-    console.error("[voicePlayer] Erreur librespot:", err);
   });
 
   librespot.on("exit", (code, signal) => {
@@ -64,10 +58,6 @@ function startFfmpegPcmToOpus() {
     stdio: ["pipe", "pipe", "inherit"],
   });
 
-  ffmpeg.on("error", (err) => {
-    console.error("[voicePlayer] Erreur ffmpeg:", err);
-  });
-
   ffmpeg.on("exit", (code, signal) => {
     console.log(`[voicePlayer] ffmpeg terminé (code=${code}, signal=${signal})`);
   });
@@ -75,7 +65,7 @@ function startFfmpegPcmToOpus() {
   return ffmpeg;
 }
 
-async function connectAndPlay(guild, voiceChannel) {
+async function connectAndPlay(guild, voiceChannel, userId) {
   const guildId = guild.id;
   const existing = sessions.get(guildId);
   if (existing) return existing;
@@ -87,7 +77,7 @@ async function connectAndPlay(guild, voiceChannel) {
     selfDeaf: false,
   });
 
-  const librespot = startLibrespotProcess();
+  const librespot = await startLibrespotProcess(userId);
   const ffmpeg = startFfmpegPcmToOpus();
 
   librespot.stdout.pipe(ffmpeg.stdin);
