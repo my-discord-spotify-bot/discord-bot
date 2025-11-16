@@ -1,55 +1,51 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { performSpotifyRequest, handleSpotifyError } = require("../lib/spotifyApi");
-
-function formatDeviceLine(device) {
-  const statusEmoji = device.is_active ? "🟢" : "⚪️";
-  const restricted = device.is_restricted ? " (restreint)" : "";
-  const privateSession = device.is_private_session ? " — session privée" : "";
-  const volume =
-    typeof device.volume_percent === "number" ? ` — ${device.volume_percent}% de volume` : "";
-
-  return `${statusEmoji} **${device.name || "Appareil inconnu"}** (${device.type || "type inconnu"})${restricted}${privateSession}${volume}`;
-}
+const { SlashCommandBuilder } = require('discord.js');
+const axios = require('axios');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("spotify_devices")
-    .setDescription("Liste les appareils disponibles pour Spotify."),
-
+    .setName('spotify_devices')
+    .setDescription('Liste les appareils Spotify disponibles'),
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
-    const userId = interaction.user.id;
 
     try {
-      const response = await performSpotifyRequest(userId, {
-        method: "get",
-        url: "https://api.spotify.com/v1/me/player/devices",
-      });
+      const database = require('../../database');
+      const account = await database.get_account(interaction.user.id);
 
-      const devices = response.data?.devices || [];
-
-      if (!devices.length) {
+      if (!account || !account.access_token) {
         return interaction.editReply({
-          content: "Spotify n'a retourné aucun appareil disponible.",
+          content: "❌ Aucun compte Spotify lié. Utilise `/linkspotify` pour lier ton compte.",
+          ephemeral: true,
         });
       }
 
-      const description = devices.map((device) => formatDeviceLine(device)).join("\n");
+      const response = await axios.get('https://api.spotify.com/v1/me/player/devices', {
+        headers: {
+          'Authorization': `Bearer ${account.access_token}`,
+        },
+      });
 
-      const embed = new EmbedBuilder()
-        .setColor(0x1db954)
-        .setTitle("Appareils Spotify disponibles")
-        .setDescription(description.slice(0, 4096));
+      if (!response.data.devices || response.data.devices.length === 0) {
+        return interaction.editReply({
+          content: "❌ Aucun appareil Spotify trouvé. Assure-toi que Muzika Bot est démarré et connecté.",
+          ephemeral: true,
+        });
+      }
 
-      return interaction.editReply({
-        embeds: [embed],
+      const devices = response.data.devices.map(device =>
+        `• **${device.name}** (${device.type}) ${device.is_active ? '✅' : ''}`
+      ).join('\n');
+
+      await interaction.editReply({
+        content: `🎧 **Appareils Spotify disponibles :**\n${devices}`,
+        ephemeral: true,
       });
     } catch (error) {
-      return handleSpotifyError(
-        interaction,
-        error,
-        "❌ Impossible de récupérer la liste des appareils Spotify."
-      );
+      console.error("Erreur dans /spotify_devices:", error.response?.data || error.message);
+      await interaction.editReply({
+        content: "❌ Impossible de récupérer la liste des appareils Spotify.",
+        ephemeral: true,
+      });
     }
   },
 };
