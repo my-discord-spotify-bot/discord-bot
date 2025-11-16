@@ -3,6 +3,8 @@ const path = require("node:path");
 const { Client, Collection, GatewayIntentBits, Events } = require("discord.js");
 const { connectAndPlay, disconnectFromGuild } = require('./lib/voicePlayer');
 
+
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
