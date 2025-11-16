@@ -9,39 +9,27 @@ module.exports = {
     const userId = interaction.user.id;
     const backendBaseUrl = process.env.BACKEND_BASE_URL; // Utilise la variable d'environnement
 
-    if (!backendBaseUrl) {
-      return interaction.reply({
-        content: "❌ Erreur de configuration : l'URL du backend est manquante.",
-        ephemeral: true,
-      });
-    }
-
     try {
       const url = `${backendBaseUrl}/get-token?code=${encodeURIComponent(userId)}`;
       const response = await axios.get(url);
 
       if (!response.data || !response.data.access_token) {
         return interaction.reply({
-          content: "Je n'ai pas trouvé de compte Spotify lié à ton profil. Utilise d'abord `/linkspotify`.",
+          content: "❌ Aucun compte Spotify lié. Utilise `/linkspotify` pour lier ton compte.",
           ephemeral: true,
         });
       }
 
       return interaction.reply({
-        content: "✅ Ton compte Spotify est bien lié ! Le bot peut maintenant agir en ton nom (selon les permissions accordées).",
+        content: "✅ Ton compte Spotify est bien lié !",
         ephemeral: true,
       });
     } catch (err) {
-      if (err.response && err.response.status === 404) {
-        return interaction.reply({
-          content: "Je n'ai pas trouvé de compte Spotify lié à ton profil. Utilise d'abord `/linkspotify`.",
-          ephemeral: true,
-        });
-      }
-
-      console.error("Erreur lors de /checkspotify:", err.response?.data || err);
+      console.error("Erreur /checkspotify:", err.response?.data || err.message);
       return interaction.reply({
-        content: "❌ Erreur lors de la vérification de ton lien Spotify. Réessaie plus tard.",
+        content: err.response?.status === 404
+          ? "❌ Aucun compte Spotify lié. Utilise `/linkspotify`."
+          : "❌ Erreur lors de la vérification. Réessaie plus tard.",
         ephemeral: true,
       });
     }
